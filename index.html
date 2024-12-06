@@ -10,10 +10,10 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
             height: 100vh;
             margin: 0;
             text-align: center;
+            padding-top: 20%;
         }
         .container {
             width: 80%;
@@ -56,7 +56,7 @@
 <body>
     <div class="container">
         <h1>Ứng Dụng Học Tiếng Anh</h1>
-        
+
         <!-- Câu hỏi -->
         <div id="vietnameseQuestion" class="question"></div>
         <div id="englishQuestion" class="question"></div>
@@ -78,7 +78,7 @@
         let currentQuestion = {};
         let isProcessing = false;
 
-        // Dữ liệu nhúng trực tiếp khi khởi chạy
+        // Dữ liệu nhúng trực tiếp
         window.onload = function () {
             const fileContent = `
                 Be careful driving / Lái xe cẩn thận
@@ -90,20 +90,21 @@
                 Excellent! / Xuất sắc!
             `;
 
+            // Xử lý dữ liệu từ fileContent
             data = fileContent.split('\n')
                 .map(line => line.trim())
                 .filter(line => line.includes(' /'))
                 .map(line => line.split(' /'));
 
             if (data.length === 0) {
-                alert("Dữ liệu không hợp lệ. Vui lòng kiểm tra!");
+                alert("Không có dữ liệu hợp lệ!");
                 return;
             }
 
             getRandomQuestion(); // Hiển thị câu hỏi đầu tiên
         };
 
-        // Lấy câu hỏi ngẫu nhiên và tạo chỗ trống
+        // Lấy câu hỏi ngẫu nhiên và tạo chỗ trống trong câu tiếng Anh
         function getRandomQuestion() {
             if (data.length === 0) {
                 alert("Không còn câu hỏi nào!");
@@ -113,33 +114,55 @@
             const randomIndex = Math.floor(Math.random() * data.length);
             const [english, vietnamese] = data[randomIndex];
 
+            // Chuyển câu tiếng Anh thành mảng từ
             const words = english.split(" ");
-            const blankIndex = Math.floor(Math.random() * words.length);
-            const blankWord = words[blankIndex];
-            words[blankIndex] = "___";
+            const blankIndex = Math.floor(Math.random() * words.length); // Chỉ ẩn duy nhất 1 từ
+            const blankWord = words[blankIndex]; // Lưu lại từ bị ẩn
+            words[blankIndex] = "___"; // Thay thế từ bị ẩn bằng ___
 
             currentQuestion = {
                 english: words.join(" "),
                 vietnamese: vietnamese.trim(),
-                blankWord: blankWord.trim(),
-                originalEnglish: english.trim(),
+                blankWord: blankWord.trim(), // Từ đúng cần điền
+                originalEnglish: english.trim(), // Lưu toàn bộ câu gốc
             };
 
+            // Hiển thị câu hỏi
             document.getElementById("vietnameseQuestion").innerText = "Tiếng Việt: " + vietnamese;
             document.getElementById("englishQuestion").innerText = "Tiếng Anh: " + currentQuestion.english;
             document.getElementById("result").innerText = "";
             document.getElementById("answer").value = "";
-            document.getElementById("nextInstruction").style.display = "none";
-            document.getElementById("speakButton").style.display = "inline-block";
+            document.getElementById("nextInstruction").style.display = "none"; // Ẩn hướng dẫn tiếp theo
+            document.getElementById("speakButton").style.display = "inline-block"; // Hiển thị nút phát âm
             isProcessing = false;
         }
 
-        // Hàm kiểm tra câu trả lời
+        // Hàm đọc văn bản bằng giọng nói
+        function speakText(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = "en-US"; // Ngôn ngữ tiếng Anh
+            utterance.rate = 0.9; // Tốc độ đọc (mặc định là 1)
+            speechSynthesis.speak(utterance);
+        }
+
+        // Hàm gọi giọng nói cho câu hỏi hiện tại
+        function speakCurrentQuestion() {
+            if (currentQuestion.originalEnglish) {
+                speakText(currentQuestion.originalEnglish);
+            } else {
+                alert("Không có câu hỏi nào để đọc!");
+            }
+        }
+
+        // Kiểm tra câu trả lời của người dùng
         function checkAnswer() {
             if (isProcessing) return;
             isProcessing = true;
 
-            const userAnswer = document.getElementById("answer").value.trim().toLowerCase();
+            const userAnswer = document.getElementById("answer").value
+                .trim()
+                .toLowerCase();
+
             const correctWord = currentQuestion.blankWord.toLowerCase();
             const result = document.getElementById("result");
 
@@ -152,18 +175,6 @@
             }
 
             document.getElementById("nextInstruction").style.display = "block";
-        }
-
-        // Hàm phát âm câu hỏi
-        function speakCurrentQuestion() {
-            if (currentQuestion.originalEnglish) {
-                const utterance = new SpeechSynthesisUtterance(currentQuestion.originalEnglish);
-                utterance.lang = "en-US";
-                utterance.rate = 0.9;
-                speechSynthesis.speak(utterance);
-            } else {
-                alert("Không có câu hỏi nào để phát âm!");
-            }
         }
 
         // Chuyển sang câu hỏi mới khi nhấn Enter hoặc click
