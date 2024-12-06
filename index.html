@@ -1,114 +1,129 @@
-<script>
-    let data = [];
-    let currentQuestion = {};
-    let isProcessing = false;
-
-    // Tải dữ liệu nhúng khi ứng dụng khởi động
-    window.onload = function () {
-        // Dữ liệu file txt được nhúng trực tiếp
-        const fileContent = `
-            Be careful driving / Lái xe cẩn thận
-            Can you translate this for me? / Bạn có thể dịch cho tôi cái này được không?
-            Chicago is very different from Boston / Chicago rất khác Boston
-            Don't worry / Đừng lo
-            Everyone knows it / Mọi người biết điều đó
-            Everything is ready / Mọi thứ đã sẵn sàng
-            Excellent! / Xuất sắc!
-        `;
-
-        // Xử lý dữ liệu từ fileContent
-        data = fileContent.split('\n')
-            .map(line => line.trim()) // Loại bỏ khoảng trắng thừa
-            .filter(line => line.includes(' /')) // Chỉ giữ các dòng hợp lệ có " /"
-            .map(line => line.split(' /')); // Tách câu thành English và Vietnamese
-
-        if (data.length === 0) {
-            alert("File không có dữ liệu hợp lệ. Vui lòng kiểm tra định dạng!");
-            return;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ứng Dụng Học Tiếng Anh</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
         }
-
-        getRandomQuestion(); // Hiển thị câu hỏi đầu tiên
-    };
-
-    // Lấy câu hỏi ngẫu nhiên và tạo chỗ trống trong câu tiếng Anh
-    function getRandomQuestion() {
-        if (data.length === 0) {
-            alert("Không còn câu hỏi nào!");
-            return;
+        .question {
+            font-size: 20px;
+            margin: 10px 0;
         }
+        .result {
+            margin: 20px 0;
+            font-size: 18px;
+        }
+        .result.failed {
+            color: red;
+        }
+        .result.passed {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <h1>Ứng Dụng Học Tiếng Anh</h1>
+    <div id="vietnameseQuestion" class="question"></div>
+    <div id="englishQuestion" class="question"></div>
+    <input type="text" id="answer" placeholder="Điền từ bị thiếu" />
+    <button onclick="checkAnswer()">Submit</button>
+    <div id="result" class="result"></div>
+    <div id="nextInstruction" style="color: blue; cursor: pointer; display: none;" onclick="getRandomQuestion()">Nhấn để tiếp tục</div>
+    <button id="speakButton" style="margin-top: 20px; display: none;" onclick="speakCurrentQuestion()">Phát âm</button>
 
-        const randomIndex = Math.floor(Math.random() * data.length);
-        const [english, vietnamese] = data[randomIndex];
+    <script>
+        let data = [];
+        let currentQuestion = {};
+        let isProcessing = false;
 
-        // Chuyển câu tiếng Anh thành mảng từ
-        const words = english.split(" ");
-        const blankIndex = Math.floor(Math.random() * words.length); // Chỉ ẩn duy nhất 1 từ
-        const blankWord = words[blankIndex]; // Lưu lại từ bị ẩn
-        words[blankIndex] = "___"; // Thay thế từ bị ẩn bằng ___
+        // Dữ liệu nhúng trực tiếp
+        window.onload = function () {
+            const fileContent = `
+                Be careful driving / Lái xe cẩn thận
+                Can you translate this for me? / Bạn có thể dịch cho tôi cái này được không?
+                Chicago is very different from Boston / Chicago rất khác Boston
+                Don't worry / Đừng lo
+                Excellent! / Xuất sắc!
+            `;
 
-        currentQuestion = {
-            english: words.join(" "),
-            vietnamese: vietnamese.trim(),
-            blankWord: blankWord.trim(), // Từ đúng cần điền
-            originalEnglish: english.trim(), // Lưu toàn bộ câu gốc
+            data = fileContent.split('\n')
+                .map(line => line.trim())
+                .filter(line => line.includes(' /'))
+                .map(line => line.split(' /'));
+
+            if (data.length === 0) {
+                alert("Không có dữ liệu hợp lệ!");
+                return;
+            }
+
+            getRandomQuestion();
         };
 
-        // Hiển thị câu hỏi
-        document.getElementById("vietnameseQuestion").innerText = "Tiếng Việt: " + vietnamese;
-        document.getElementById("englishQuestion").innerText = "Tiếng Anh: " + currentQuestion.english;
-        document.getElementById("result").innerText = "";
-        document.getElementById("answer").value = "";
-        document.getElementById("nextInstruction").style.display = "none"; // Ẩn hướng dẫn tiếp theo
-        document.getElementById("speakButton").style.display = "inline-block"; // Hiển thị nút phát âm
-        isProcessing = false; // Đặt lại trạng thái xử lý
-    }
+        function getRandomQuestion() {
+            if (data.length === 0) {
+                alert("Không còn câu hỏi nào!");
+                return;
+            }
 
-    // Hàm đọc văn bản bằng giọng nói
-    function speakText(text) {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = "en-US"; // Ngôn ngữ tiếng Anh
-        utterance.rate = 0.9; // Tốc độ đọc (mặc định là 1)
-        speechSynthesis.speak(utterance);
-    }
+            const randomIndex = Math.floor(Math.random() * data.length);
+            const [english, vietnamese] = data[randomIndex];
 
-    // Hàm gọi giọng nói cho câu hỏi hiện tại
-    function speakCurrentQuestion() {
-        if (currentQuestion.originalEnglish) {
-            speakText(currentQuestion.originalEnglish);
-        } else {
-            alert("Không có câu hỏi nào để đọc!");
-        }
-    }
+            const words = english.split(" ");
+            const blankIndex = Math.floor(Math.random() * words.length);
+            const blankWord = words[blankIndex];
+            words[blankIndex] = "___";
 
-    // Kiểm tra câu trả lời của người dùng
-    function checkAnswer() {
-        if (isProcessing) return; // Ngăn người dùng nhấn nhiều lần liên tiếp
-        isProcessing = true;
+            currentQuestion = {
+                english: words.join(" "),
+                vietnamese: vietnamese.trim(),
+                blankWord: blankWord.trim(),
+                originalEnglish: english.trim(),
+            };
 
-        const userAnswer = document.getElementById("answer").value
-            .trim() // Xóa khoảng trắng thừa ở đầu và cuối
-            .toLowerCase(); // Chuyển về chữ thường
-
-        const correctWord = currentQuestion.blankWord.toLowerCase();
-        const result = document.getElementById("result");
-
-        if (userAnswer === correctWord) {
-            result.innerText = "Passed. Bạn giỏi quá!";
-            result.className = "result passed";
-        } else {
-            result.innerText = `Failed. :( Từ đúng là: "${currentQuestion.blankWord}"`;
-            result.className = "result failed";
+            document.getElementById("vietnameseQuestion").innerText = "Tiếng Việt: " + vietnamese;
+            document.getElementById("englishQuestion").innerText = "Tiếng Anh: " + currentQuestion.english;
+            document.getElementById("result").innerText = "";
+            document.getElementById("answer").value = "";
+            document.getElementById("nextInstruction").style.display = "none";
+            document.getElementById("speakButton").style.display = "inline-block";
+            isProcessing = false;
         }
 
-        // Hiển thị hướng dẫn để chuyển sang câu hỏi mới
-        document.getElementById("nextInstruction").style.display = "block";
-    }
+        function checkAnswer() {
+            if (isProcessing) return;
+            isProcessing = true;
 
-    // Chuyển sang câu hỏi mới khi nhấn Enter hoặc click
-    document.getElementById("nextInstruction").addEventListener("click", getRandomQuestion);
-    document.addEventListener("keydown", function (e) {
-        if (e.key === "Enter" && document.getElementById("nextInstruction").style.display === "block") {
-            getRandomQuestion();
+            const userAnswer = document.getElementById("answer").value.trim().toLowerCase();
+            const correctWord = currentQuestion.blankWord.toLowerCase();
+            const result = document.getElementById("result");
+
+            if (userAnswer === correctWord) {
+                result.innerText = "Passed. Bạn giỏi quá!";
+                result.className = "result passed";
+            } else {
+                result.innerText = `Failed. :( Từ đúng là: "${currentQuestion.blankWord}"`;
+                result.className = "result failed";
+            }
+
+            document.getElementById("nextInstruction").style.display = "block";
         }
-    });
-</script>
+
+        function speakCurrentQuestion() {
+            const utterance = new SpeechSynthesisUtterance(currentQuestion.originalEnglish);
+            utterance.lang = "en-US";
+            utterance.rate = 0.9;
+            speechSynthesis.speak(utterance);
+        }
+    </script>
+</body>
+</html>
