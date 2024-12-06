@@ -4,36 +4,27 @@
     let isProcessing = false;
 
     // Tải file .txt từ GitHub khi ứng dụng khởi động
-    window.onload = function () {
-        const txtFileURL = "https://drive.google.com/file/d/1yKvuabyz-Dfpo7FAppP0Wt9D3tcqc77f/view?usp=drive_link"; // Thay bằng URL file của bạn
+   window.onload = function () {
+    // Dữ liệu file txt được nhúng trực tiếp
+    const fileContent = `
+        Be careful driving / Lái xe cẩn thận
+        Can you translate this for me? / Bạn có thể dịch cho tôi cái này được không?
+        ...
+    `;
 
-        fetch(txtFileURL)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error("Không thể tải dữ liệu từ file. Vui lòng kiểm tra URL.");
-                }
-                return response.text();
-            })
-            .then(fileContent => {
-                // Xử lý nội dung file
-                data = fileContent.split('\n')
-                    .map(line => line.trim())
-                    .filter(line => line.includes(' /'))
-                    .map(line => line.split(' /'));
+    data = fileContent.split('\n')
+        .map(line => line.trim())
+        .filter(line => line.includes(' /'))
+        .map(line => line.split(' /'));
 
-                if (data.length === 0) {
-                    alert("File không có dữ liệu hợp lệ. Vui lòng kiểm tra định dạng!");
-                    return;
-                }
+    if (data.length === 0) {
+        alert("File không có dữ liệu hợp lệ. Vui lòng kiểm tra định dạng!");
+        return;
+    }
 
-                getRandomQuestion(); // Sau khi đọc file, lấy câu hỏi ngẫu nhiên
-            })
-            .catch(error => {
-                console.error("Lỗi:", error);
-                alert("Không thể tải file. Kiểm tra lại đường dẫn hoặc file trên GitHub.");
-            });
-    };
-
+    getRandomQuestion(); // Hiển thị câu hỏi đầu tiên
+};
+    
     // Lấy câu hỏi ngẫu nhiên và tạo chỗ trống trong câu tiếng Anh
     function getRandomQuestion() {
         if (data.length === 0) {
