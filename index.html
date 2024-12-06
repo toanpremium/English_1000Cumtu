@@ -1,118 +1,29 @@
-<script>
-    let data = [];
-    let currentQuestion = {};
-    let isProcessing = false;
+window.onload = function () {
+    const txtFileURL = "https://raw.githubusercontent.com/toanpremium/English_1000Cumtu/main/1000_cumtu.txt"; // URL đúng từ GitHub
 
-    // Tải file .txt từ GitHub khi ứng dụng khởi động
-    window.onload = function () {
-       const txtFileURL = "https://raw.githubusercontent.com/toanpremium/English_1000Cumtu/main/1000_cumtu.txt"; // Thay bằng URL file của bạn
+    fetch(txtFileURL)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Không thể tải dữ liệu từ file. Vui lòng kiểm tra URL.");
+            }
+            return response.text();
+        })
+        .then(fileContent => {
+            // Xử lý nội dung file
+            data = fileContent.split('\n')
+                .map(line => line.trim())
+                .filter(line => line.includes(' /'))
+                .map(line => line.split(' /'));
 
-        fetch(txtFileURL)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error("Không thể tải dữ liệu từ file. Vui lòng kiểm tra URL.");
-                }
-                return response.text();
-            })
-            .then(fileContent => {
-                // Xử lý nội dung file
-                data = fileContent.split('\n')
-                    .map(line => line.trim())
-                    .filter(line => line.includes(' /'))
-                    .map(line => line.split(' /'));
+            if (data.length === 0) {
+                alert("File không có dữ liệu hợp lệ. Vui lòng kiểm tra định dạng!");
+                return;
+            }
 
-                if (data.length === 0) {
-                    alert("File không có dữ liệu hợp lệ. Vui lòng kiểm tra định dạng!");
-                    return;
-                }
-
-                getRandomQuestion(); // Sau khi đọc file, lấy câu hỏi ngẫu nhiên
-            })
-            .catch(error => {
-                console.error("Lỗi:", error);
-                alert("Không thể tải file. Kiểm tra lại đường dẫn hoặc file trên GitHub.");
-            });
-    };
-
-    // Lấy câu hỏi ngẫu nhiên và tạo chỗ trống trong câu tiếng Anh
-    function getRandomQuestion() {
-        if (data.length === 0) {
-            alert("Không còn câu hỏi nào!");
-            return;
-        }
-
-        const randomIndex = Math.floor(Math.random() * data.length);
-        const [english, vietnamese] = data[randomIndex];
-
-        // Chuyển câu tiếng Anh thành mảng từ
-        const words = english.split(" ");
-        const blankIndex = Math.floor(Math.random() * words.length); // Chỉ ẩn duy nhất 1 từ
-        const blankWord = words[blankIndex]; // Lưu lại từ bị ẩn
-        words[blankIndex] = "___"; // Thay thế từ bị ẩn bằng ___
-
-        currentQuestion = {
-            english: words.join(" "),
-            vietnamese: vietnamese.trim(),
-            blankWord: blankWord.trim(), // Từ đúng cần điền
-            originalEnglish: english.trim(), // Lưu toàn bộ câu gốc
-        };
-
-        // Hiển thị câu hỏi
-        document.getElementById("vietnameseQuestion").innerText = "Tiếng Việt: " + vietnamese;
-        document.getElementById("englishQuestion").innerText = "Tiếng Anh: " + currentQuestion.english;
-        document.getElementById("result").innerText = "";
-        document.getElementById("answer").value = "";
-        document.getElementById("nextInstruction").style.display = "none"; // Ẩn hướng dẫn tiếp theo
-        document.getElementById("speakButton").style.display = "inline-block"; // Hiển thị nút phát âm
-        isProcessing = false; // Đặt lại trạng thái xử lý
-    }
-
-    // Hàm đọc văn bản bằng giọng nói
-    function speakText(text) {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = "en-US"; // Ngôn ngữ tiếng Anh
-        utterance.rate = 0.9; // Tốc độ đọc (mặc định là 1)
-        speechSynthesis.speak(utterance);
-    }
-
-    // Hàm gọi giọng nói cho câu hỏi hiện tại
-    function speakCurrentQuestion() {
-        if (currentQuestion.originalEnglish) {
-            speakText(currentQuestion.originalEnglish);
-        } else {
-            alert("Không có câu hỏi nào để đọc!");
-        }
-    }
-
-    // Kiểm tra câu trả lời của người dùng
-    function checkAnswer() {
-        if (isProcessing) return; // Ngăn người dùng nhấn nhiều lần liên tiếp
-        isProcessing = true;
-
-        const userAnswer = document.getElementById("answer").value
-            .trim() // Xóa khoảng trắng thừa ở đầu và cuối
-            .toLowerCase(); // Chuyển về chữ thường
-
-        const correctWord = currentQuestion.blankWord.toLowerCase();
-        const result = document.getElementById("result");
-
-        if (userAnswer === correctWord) {
-            result.innerText = "Passed. Bạn giỏi quá!";
-            result.className = "result passed";
-        } else {
-            result.innerText = `Failed. :( Từ đúng là: "${currentQuestion.blankWord}"`;
-            result.className = "result failed";
-        }
-
-        // Hiển thị hướng dẫn để chuyển sang câu hỏi mới
-        document.getElementById("nextInstruction").style.display = "block";
-    }
-
-    // Chuyển sang câu hỏi mới khi nhấn Enter hoặc click
-    document.getElementById("nextInstruction").addEventListener("click", getRandomQuestion);
-    document.addEventListener("keydown", function (e) {
-        if (e.key === "Enter" && document.getElementById("nextInstruction").style.display === "block") {
-            getRandomQuestion();
-        }
-    });
-</script>
+            getRandomQuestion(); // Sau khi đọc file, lấy câu hỏi ngẫu nhiên
+        })
+        .catch(error => {
+            console.error("Lỗi:", error);
+            alert("Không thể tải file. Kiểm tra lại đường dẫn hoặc file trên GitHub.");
+        });
+};
