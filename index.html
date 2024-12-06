@@ -1,197 +1,118 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ứng Dụng Học Tiếng Anh</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            text-align: center;
-            padding-top: 20%; /* Dịch nội dung lên từ phía trên */
-        }
-        .container {
-            width: 80%;
-            max-width: 600px;
-        }
-        input[type="file"] {
-            margin-bottom: 20px;
-        }
-        .question {
-            font-size: 20px;
-            margin-top: 20px;
-            margin-bottom: 20px;
-        }
-        .result {
-            margin-top: 20px;
-            font-size: 18px;
-            color: green;
-        }
-        .result.failed {
-            color: red;
-        }
-        .next-instruction {
-            font-size: 16px;
-            color: blue;
-            margin-top: 10px;
-            cursor: pointer;
-        }
-        input[type="text"] {
-            font-size: 16px;
-            padding: 5px;
-            margin-top: 10px;
-            margin-bottom: 10px;
-            width: 80%;
-            max-width: 300px;
-        }
-        button {
-            font-size: 16px;
-            padding: 5px 15px;
-            margin-top: 10px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Ứng Dụng Học Tiếng Anh</h1>
+<script>
+    let data = [];
+    let currentQuestion = {};
+    let isProcessing = false;
 
-        <!-- Tải lên file .txt -->
-        <input type="file" id="fileInput" accept=".txt" />
-        
-        <!-- Câu hỏi -->
-        <div id="vietnameseQuestion" class="question"></div>
-        <div id="englishQuestion" class="question"></div>
+    // Tải file .txt từ GitHub khi ứng dụng khởi động
+    window.onload = function () {
+        const txtFileURL = "https://raw.githubusercontent.com/toanpremium/English_1000Cumtu/main/1000_cumtu.txt"; // Thay bằng URL file của bạn
 
-        <!-- Nút phát âm -->
-        <button id="speakButton" onclick="speakCurrentQuestion()" style="display: none;">Phát âm</button>
+        fetch(txtFileURL)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Không thể tải dữ liệu từ file. Vui lòng kiểm tra URL.");
+                }
+                return response.text();
+            })
+            .then(fileContent => {
+                // Xử lý nội dung file
+                data = fileContent.split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line.includes(' /'))
+                    .map(line => line.split(' /'));
 
-        <!-- Trả lời -->
-        <input type="text" id="answer" placeholder="Điền từ bị thiếu">
-        <button onclick="checkAnswer()">Submit</button>
-        
-        <!-- Kết quả -->
-        <div id="result" class="result"></div>
-        <div id="nextInstruction" class="next-instruction" style="display: none;">Nhấn Enter hoặc click vào đây để tiếp tục</div>
-    </div>
+                if (data.length === 0) {
+                    alert("File không có dữ liệu hợp lệ. Vui lòng kiểm tra định dạng!");
+                    return;
+                }
 
-    <script>
-        let data = [];
-        let currentQuestion = {};
-        let isProcessing = false; // Ngăn chặn việc submit liên tiếp
+                getRandomQuestion(); // Sau khi đọc file, lấy câu hỏi ngẫu nhiên
+            })
+            .catch(error => {
+                console.error("Lỗi:", error);
+                alert("Không thể tải file. Kiểm tra lại đường dẫn hoặc file trên GitHub.");
+            });
+    };
 
-        // Đọc file .txt khi người dùng tải lên
-        document.getElementById("fileInput").addEventListener("change", function (e) {
-            const file = e.target.files[0];
-            if (file && file.type === "text/plain") {
-                const reader = new FileReader();
-                reader.onload = function (event) {
-                    const fileContent = event.target.result;
-
-                    // Kiểm tra định dạng và chỉ lấy những dòng hợp lệ
-                    data = fileContent.split('\n')
-                        .map(line => line.trim())
-                        .filter(line => line.includes(' /'))
-                        .map(line => line.split(' /'));
-
-                    if (data.length === 0) {
-                        alert("File không có dữ liệu hợp lệ. Vui lòng kiểm tra định dạng!");
-                        return;
-                    }
-
-                    getRandomQuestion(); // Sau khi đọc file, lấy câu hỏi ngẫu nhiên
-                };
-                reader.readAsText(file);
-            } else {
-                alert("Vui lòng tải lên file .txt hợp lệ!");
-            }
-        });
-
-        // Lấy câu hỏi ngẫu nhiên và tạo chỗ trống trong câu tiếng Anh
-        function getRandomQuestion() {
-            if (data.length === 0) {
-                alert("Không còn câu hỏi nào!");
-                return;
-            }
-
-            const randomIndex = Math.floor(Math.random() * data.length);
-            const [english, vietnamese] = data[randomIndex];
-
-            // Chuyển câu tiếng Anh thành mảng từ
-            const words = english.split(" ");
-            const blankIndex = Math.floor(Math.random() * words.length); // Chỉ ẩn duy nhất 1 từ
-            const blankWord = words[blankIndex]; // Lưu lại từ bị ẩn
-            words[blankIndex] = "___"; // Thay thế từ bị ẩn bằng ___
-
-            currentQuestion = {
-                english: words.join(" "),
-                vietnamese: vietnamese.trim(),
-                blankWord: blankWord.trim(), // Từ đúng cần điền
-                originalEnglish: english.trim(), // Lưu toàn bộ câu gốc
-            };
-
-            // Hiển thị câu hỏi
-            document.getElementById("vietnameseQuestion").innerText = "Tiếng Việt: " + vietnamese;
-            document.getElementById("englishQuestion").innerText = "Tiếng Anh: " + currentQuestion.english;
-            document.getElementById("result").innerText = "";
-            document.getElementById("answer").value = "";
-            document.getElementById("nextInstruction").style.display = "none"; // Ẩn hướng dẫn tiếp theo
-            document.getElementById("speakButton").style.display = "inline-block"; // Hiển thị nút phát âm
-            isProcessing = false; // Đặt lại trạng thái xử lý
+    // Lấy câu hỏi ngẫu nhiên và tạo chỗ trống trong câu tiếng Anh
+    function getRandomQuestion() {
+        if (data.length === 0) {
+            alert("Không còn câu hỏi nào!");
+            return;
         }
 
-        // Hàm đọc văn bản bằng giọng nói
-        function speakText(text) {
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = "en-US"; // Ngôn ngữ tiếng Anh
-            utterance.rate = 0.9; // Tốc độ đọc (mặc định là 1)
-            speechSynthesis.speak(utterance);
+        const randomIndex = Math.floor(Math.random() * data.length);
+        const [english, vietnamese] = data[randomIndex];
+
+        // Chuyển câu tiếng Anh thành mảng từ
+        const words = english.split(" ");
+        const blankIndex = Math.floor(Math.random() * words.length); // Chỉ ẩn duy nhất 1 từ
+        const blankWord = words[blankIndex]; // Lưu lại từ bị ẩn
+        words[blankIndex] = "___"; // Thay thế từ bị ẩn bằng ___
+
+        currentQuestion = {
+            english: words.join(" "),
+            vietnamese: vietnamese.trim(),
+            blankWord: blankWord.trim(), // Từ đúng cần điền
+            originalEnglish: english.trim(), // Lưu toàn bộ câu gốc
+        };
+
+        // Hiển thị câu hỏi
+        document.getElementById("vietnameseQuestion").innerText = "Tiếng Việt: " + vietnamese;
+        document.getElementById("englishQuestion").innerText = "Tiếng Anh: " + currentQuestion.english;
+        document.getElementById("result").innerText = "";
+        document.getElementById("answer").value = "";
+        document.getElementById("nextInstruction").style.display = "none"; // Ẩn hướng dẫn tiếp theo
+        document.getElementById("speakButton").style.display = "inline-block"; // Hiển thị nút phát âm
+        isProcessing = false; // Đặt lại trạng thái xử lý
+    }
+
+    // Hàm đọc văn bản bằng giọng nói
+    function speakText(text) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "en-US"; // Ngôn ngữ tiếng Anh
+        utterance.rate = 0.9; // Tốc độ đọc (mặc định là 1)
+        speechSynthesis.speak(utterance);
+    }
+
+    // Hàm gọi giọng nói cho câu hỏi hiện tại
+    function speakCurrentQuestion() {
+        if (currentQuestion.originalEnglish) {
+            speakText(currentQuestion.originalEnglish);
+        } else {
+            alert("Không có câu hỏi nào để đọc!");
+        }
+    }
+
+    // Kiểm tra câu trả lời của người dùng
+    function checkAnswer() {
+        if (isProcessing) return; // Ngăn người dùng nhấn nhiều lần liên tiếp
+        isProcessing = true;
+
+        const userAnswer = document.getElementById("answer").value
+            .trim() // Xóa khoảng trắng thừa ở đầu và cuối
+            .toLowerCase(); // Chuyển về chữ thường
+
+        const correctWord = currentQuestion.blankWord.toLowerCase();
+        const result = document.getElementById("result");
+
+        if (userAnswer === correctWord) {
+            result.innerText = "Passed. Bạn giỏi quá!";
+            result.className = "result passed";
+        } else {
+            result.innerText = `Failed. :( Từ đúng là: "${currentQuestion.blankWord}"`;
+            result.className = "result failed";
         }
 
-        // Hàm gọi giọng nói cho câu hỏi hiện tại
-        function speakCurrentQuestion() {
-            if (currentQuestion.originalEnglish) {
-                speakText(currentQuestion.originalEnglish);
-            } else {
-                alert("Không có câu hỏi nào để đọc!");
-            }
+        // Hiển thị hướng dẫn để chuyển sang câu hỏi mới
+        document.getElementById("nextInstruction").style.display = "block";
+    }
+
+    // Chuyển sang câu hỏi mới khi nhấn Enter hoặc click
+    document.getElementById("nextInstruction").addEventListener("click", getRandomQuestion);
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" && document.getElementById("nextInstruction").style.display === "block") {
+            getRandomQuestion();
         }
-
-        // Kiểm tra câu trả lời của người dùng
-        function checkAnswer() {
-            if (isProcessing) return; // Ngăn người dùng nhấn nhiều lần liên tiếp
-            isProcessing = true;
-
-            const userAnswer = document.getElementById("answer").value
-                .trim() // Xóa khoảng trắng thừa ở đầu và cuối
-                .toLowerCase(); // Chuyển về chữ thường
-
-            const correctWord = currentQuestion.blankWord.toLowerCase();
-            const result = document.getElementById("result");
-
-            if (userAnswer === correctWord) {
-                result.innerText = "Passed. Bạn giỏi quá!";
-                result.className = "result passed";
-            } else {
-                result.innerText = `Failed. :( Từ đúng là: "${currentQuestion.blankWord}"`;
-                result.className = "result failed";
-            }
-
-            // Hiển thị hướng dẫn để chuyển sang câu hỏi mới
-            document.getElementById("nextInstruction").style.display = "block";
-        }
-
-        // Chuyển sang câu hỏi mới khi nhấn Enter hoặc click
-        document.getElementById("nextInstruction").addEventListener("click", getRandomQuestion);
-        document.addEventListener("keydown", function (e) {
-            if (e.key === "Enter" && document.getElementById("nextInstruction").style.display === "block") {
-                getRandomQuestion();
-            }
-        });
-    </script>
-</body>
-</html>
+    });
+</script>
