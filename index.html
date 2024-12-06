@@ -3,28 +3,33 @@
     let currentQuestion = {};
     let isProcessing = false;
 
-    // Tải file .txt từ GitHub khi ứng dụng khởi động
-   window.onload = function () {
-    // Dữ liệu file txt được nhúng trực tiếp
-    const fileContent = `
-        Be careful driving / Lái xe cẩn thận
-        Can you translate this for me? / Bạn có thể dịch cho tôi cái này được không?
-        ...
-    `;
+    // Tải dữ liệu nhúng khi ứng dụng khởi động
+    window.onload = function () {
+        // Dữ liệu file txt được nhúng trực tiếp
+        const fileContent = `
+            Be careful driving / Lái xe cẩn thận
+            Can you translate this for me? / Bạn có thể dịch cho tôi cái này được không?
+            Chicago is very different from Boston / Chicago rất khác Boston
+            Don't worry / Đừng lo
+            Everyone knows it / Mọi người biết điều đó
+            Everything is ready / Mọi thứ đã sẵn sàng
+            Excellent! / Xuất sắc!
+        `;
 
-    data = fileContent.split('\n')
-        .map(line => line.trim())
-        .filter(line => line.includes(' /'))
-        .map(line => line.split(' /'));
+        // Xử lý dữ liệu từ fileContent
+        data = fileContent.split('\n')
+            .map(line => line.trim()) // Loại bỏ khoảng trắng thừa
+            .filter(line => line.includes(' /')) // Chỉ giữ các dòng hợp lệ có " /"
+            .map(line => line.split(' /')); // Tách câu thành English và Vietnamese
 
-    if (data.length === 0) {
-        alert("File không có dữ liệu hợp lệ. Vui lòng kiểm tra định dạng!");
-        return;
-    }
+        if (data.length === 0) {
+            alert("File không có dữ liệu hợp lệ. Vui lòng kiểm tra định dạng!");
+            return;
+        }
 
-    getRandomQuestion(); // Hiển thị câu hỏi đầu tiên
-};
-    
+        getRandomQuestion(); // Hiển thị câu hỏi đầu tiên
+    };
+
     // Lấy câu hỏi ngẫu nhiên và tạo chỗ trống trong câu tiếng Anh
     function getRandomQuestion() {
         if (data.length === 0) {
